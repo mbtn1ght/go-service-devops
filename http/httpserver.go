@@ -17,6 +17,8 @@ type Server struct {
 func New(port string) *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", Hello)
+	mux.HandleFunc("/healthz", Healthz)
+	mux.HandleFunc("/favicon.ico", Favicon)
 
 	s := &Server{
 		server: &http.Server{
@@ -44,8 +46,19 @@ func (s *Server) Close() {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-	log.Info().Msg("hello handler called")
+	log.Info().
+		Str("method", r.Method).
+		Str("path", r.URL.Path).
+		Msg("request received")
 	w.Write([]byte("hello"))
+}
+
+func Healthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func Favicon(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) start() {
