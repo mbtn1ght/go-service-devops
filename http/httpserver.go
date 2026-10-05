@@ -5,6 +5,9 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -14,11 +17,10 @@ type Server struct {
 	server *http.Server
 }
 
-func New(port string) *Server {
+func New(port, webDir string) *Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", Hello)
 	mux.HandleFunc("/healthz", Healthz)
-	mux.HandleFunc("/favicon.ico", Favicon)
+	mux.HandleFunc("/", SPA(webDir))
 
 	s := &Server{
 		server: &http.Server{
@@ -45,20 +47,27 @@ func (s *Server) Close() {
 	log.Info().Msg("http server: closed")
 }
 
-func Hello(w http.ResponseWriter, r *http.Request) {
-	log.Info().
-		Str("method", r.Method).
-		Str("path", r.URL.Path).
-		Msg("request received")
-	w.Write([]byte("hello"))
+func SPA(webDir string) http.HandlerFunc {
+	files := http.FileServer(http.Dir(webDir))
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Msg("request received")
+
+		path := filepath.Join(webDir, filepath.Clean(strings.TrimPrefix(r.URL.Path, "/")))
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			files.ServeHTTP(w, r)
+			return
+		}
+
+		http.ServeFile(w, r, filepath.Join(webDir, "index.html"))
+	}
 }
 
 func Healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-}
-
-func Favicon(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) start() {

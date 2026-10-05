@@ -3,3 +3,5 @@
 .agents
 .codex
 README.md
+web/node_modules
+web/dist

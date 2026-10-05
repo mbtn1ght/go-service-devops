@@ -12,8 +12,15 @@ import (
 
 func main() {
 	logger.New()
-	port := "8080"
-	httpServer := http.New(port)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	webDir := os.Getenv("WEB_DIR")
+	if webDir == "" {
+		webDir = "web/dist"
+	}
+	httpServer := http.New(port, webDir)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
