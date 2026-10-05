@@ -58,4 +58,4 @@ push: check-clean
 update:
 	$(SSH) 'set -eu; cd "$(VPS_DIR)"; git fetch --prune origin "$(BRANCH)"; git reset --hard "origin/$(BRANCH)"; git clean -fd; docker compose up -d --build --remove-orphans; docker compose ps; curl -fsS http://127.0.0.1:8080/healthz >/dev/null'
 
-deploy: push update
+deploy: test push update
